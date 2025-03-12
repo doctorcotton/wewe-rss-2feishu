@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  # WeWe RSS服务 (使用SQLite)
+  wewe-rss:
+    image: cooderl/wewe-rss-sqlite:latest
+    container_name: wewe-rss
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_TYPE=sqlite
+      - AUTH_CODE=wewerss123  # 请修改为您自己的密码
+      - SERVER_ORIGIN_URL=http://localhost:4000  # 如果有公网IP或域名，请修改
+      - FEED_MODE=fulltext  # 启用全文模式
+      - CRON_EXPRESSION=20 9 * * *  # 每天9:20更新
+      - UPDATE_DELAY_TIME=60  # 更新延迟时间，单位秒
+      - PYTHON_SERVICE_URL=http://python-service:5001
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    networks:
+      - wewe-network
+  
+  # Python服务 (MD转JSON和Webhook处理)
+  python-service:
+    build:
+      context: ./python-scripts
+      dockerfile: Dockerfile.python
+    container_name: wewe-python
+    restart: always
+    ports:
+      - "5001:5001"  # API服务端口
+    environment:
+      - FEISHU_SUMMARY_WEBHOOK_URL=${FEISHU_SUMMARY_WEBHOOK_URL}
+      - FEISHU_MD_TO_JSON_WEBHOOK_URL=${FEISHU_MD_TO_JSON_WEBHOOK_URL}
+      - FEISHU_TABLE_SCHEDULE_TIME=${FEISHU_TABLE_SCHEDULE_TIME:-0 30 9 * * *}
+      - ARTICLE_INTERVAL_MINUTES=${ARTICLE_INTERVAL_MINUTES:-0.2}
+      - SUMMARY_DELAY_MINUTES=${SUMMARY_DELAY_MINUTES:-2}
+      - WEWE_RSS_URL=http://wewe-rss:4000
+      - AUTH_CODE=wewerss123
+      - NODE_SERVICE_URL=http://wewe-rss:4000
+    volumes:
+      - ./python-scripts:/app
+    depends_on:
+      - wewe-rss
+    networks:
+      - wewe-network
+
+# 定义网络，使服务之间可以通信
+networks:
+  wewe-network:
+    driver: bridge 

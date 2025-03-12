@@ -7,6 +7,7 @@ import configuration, { ConfigurationType } from './configuration';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FeedsModule } from './feeds/feeds.module';
+import { PythonApiController } from './python-api.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,10 @@ import { FeedsModule } from './feeds/feeds.module';
       },
     }),
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    PythonApiController,
+  ],
   providers: [AppService],
 })
 export class AppModule {}

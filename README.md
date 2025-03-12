@@ -37,9 +37,41 @@
 
 [Hugging Face部署参考](https://github.com/cooderl/wewe-rss/issues/32)
 
-### Docker Compose 部署
+### Docker Compose 部署（完整版，包含Python服务）
 
-可参考 [docker-compose.yml](https://github.com/cooderl/wewe-rss/blob/main/docker-compose.yml) 和 [docker-compose.sqlite.yml](https://github.com/cooderl/wewe-rss/blob/main/docker-compose.sqlite.yml)
+1. 克隆仓库到本地：
+
+```bash
+git clone https://github.com/doctorcotton/wewe-rss-2feishu.git
+cd wewe-rss-2feishu
+```
+
+2. 复制src目录到项目中（如果您有现有的src目录）：
+
+在Linux/Mac上：
+```bash
+chmod +x copy-src.sh
+./copy-src.sh
+```
+
+在Windows上：
+```bash
+copy-src.bat
+```
+
+3. 复制`.env.example`文件为`.env`，并填写相关配置：
+
+```bash
+cp .env.example .env
+```
+
+4. 编辑`.env`文件，填写飞书Webhook URL等配置
+
+5. 使用Docker Compose启动服务：
+
+```bash
+docker-compose -f docker-compose.full.yml up -d
+```
 
 ### Docker 命令启动
 
@@ -142,12 +174,48 @@ pnpm run start:server
 
 ## 使用方式
 
-1. 进入账号管理，点击添加账号，微信扫码登录微信读书账号。
-   <img width="400" src="./assets/preview2.png"/>
+### 1. WeWe RSS 基本功能
 
-1. 进入公众号源，点击添加，通过提交微信公众号分享链接，订阅微信公众号。
-   **（添加频率过高容易被封控，等24小时解封）**
-   <img width="400" src="./assets/preview3.png"/>
+1. 进入账号管理，点击添加账号，微信扫码登录微信读书账号。
+2. 进入公众号源，点击添加，通过提交微信公众号分享链接，订阅微信公众号。**（添加频率过高容易被封控，等24小时解封）**
+
+### 2. Python服务功能
+
+#### 2.1 MD转JSON服务
+
+访问 http://localhost:5001 可以使用Web界面测试MD转JSON功能。
+
+也可以通过API接口使用：
+
+```
+POST http://localhost:5001/convert-md
+Content-Type: application/json
+
+{
+  "content": "# 标题\n\n## 1. 今日要点速览\n\n- 内容1\n- 内容2"
+}
+```
+
+#### 2.2 Webhook服务器
+
+访问 http://localhost:5001/start-webhook-server 启动Webhook服务器，监听来自飞书多维表格的请求。
+
+#### 2.3 发送文章到飞书
+
+访问 http://localhost:5001/send-articles-to-feishu 从WeWe RSS获取文章并发送到飞书。
+
+#### 2.4 发送每日摘要
+
+通过API接口发送每日摘要：
+
+```
+POST http://localhost:5001/send-daily-summary
+Content-Type: application/json
+
+{
+  "content": "今日摘要内容..."
+}
+```
 
 ## 账号状态说明
 
