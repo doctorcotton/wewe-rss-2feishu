@@ -1,27 +1,51 @@
 version: '3.9'
 
 services:
-  # WeWe RSS服务 (使用SQLite)
-  wewe-rss:
-    image: cooderl/wewe-rss-sqlite:latest
+  # 数据库服务
+  db:
+    image: mysql:8.3.0
+    command: --mysql-native-password=ON
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      TZ: 'Asia/Shanghai'
+      MYSQL_DATABASE: 'wewe-rss'
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    networks:
+      - wewe-network
+
+  # WeWe RSS 主服务
+  wewerss:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
     container_name: wewe-rss
     restart: always
     ports:
       - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_TYPE=sqlite
-      - AUTH_CODE=wewerss123  # 请修改为您自己的密码
-      - SERVER_ORIGIN_URL=http://localhost:4000  # 如果有公网IP或域名，请修改
-      - FEED_MODE=fulltext  # 启用全文模式
-      - CRON_EXPRESSION=20 9 * * *  # 每天9:20更新
-      - UPDATE_DELAY_TIME=60  # 更新延迟时间，单位秒
-      - PYTHON_SERVICE_URL=http://python-service:5001
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:-123456}@db:3306/wewe-rss?schema=public&connect_timeout=30&pool_timeout=30&socket_timeout=30
+      - AUTH_CODE=${AUTH_CODE:-wewerss123}
+      - FEED_MODE=${FEED_MODE:-fulltext}
+      - CRON_EXPRESSION=${CRON_EXPRESSION:-35 5,17 * * *}
+      - MAX_REQUEST_PER_MINUTE=${MAX_REQUEST_PER_MINUTE:-60}
+      - SERVER_ORIGIN_URL=${SERVER_ORIGIN_URL:-http://localhost:4000}
+      - NODE_ENV=production
+      - HOST=0.0.0.0
     volumes:
       - ./data:/app/data
-      - ./src:/app/src
     networks:
       - wewe-network
-  
+
   # Python服务 (MD转JSON和Webhook处理)
   python-service:
     build:
@@ -37,17 +61,21 @@ services:
       - FEISHU_TABLE_SCHEDULE_TIME=${FEISHU_TABLE_SCHEDULE_TIME:-0 30 9 * * *}
       - ARTICLE_INTERVAL_MINUTES=${ARTICLE_INTERVAL_MINUTES:-0.2}
       - SUMMARY_DELAY_MINUTES=${SUMMARY_DELAY_MINUTES:-2}
-      - WEWE_RSS_URL=http://wewe-rss:4000
-      - AUTH_CODE=wewerss123
-      - NODE_SERVICE_URL=http://wewe-rss:4000
+      - WEWE_RSS_URL=http://wewerss:4000
+      - AUTH_CODE=${AUTH_CODE:-wewerss123}
+      - NODE_SERVICE_URL=http://wewerss:4000
     volumes:
       - ./python-scripts:/app
     depends_on:
-      - wewe-rss
+      - wewerss
     networks:
       - wewe-network
 
 # 定义网络，使服务之间可以通信
 networks:
   wewe-network:
-    driver: bridge 
+    driver: bridge
+
+# 定义持久化卷
+volumes:
+  db_data: 

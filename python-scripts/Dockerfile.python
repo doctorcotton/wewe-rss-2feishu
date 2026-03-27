@@ -1,17 +1,14 @@
-FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.9-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# 配置pip使用国内源
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
-    pip config set install.trusted-host mirrors.aliyun.com
-
 # 安装依赖
-RUN pip install --no-cache-dir python-dotenv requests markdown
+RUN pip install --no-cache-dir python-dotenv requests markdown flask flask-cors schedule apscheduler
 
 # 复制Python脚本
 COPY wewerss_runner.py /app/
 COPY wewerss_api.py /app/
+COPY .env /app/
 
 # 创建数据目录
 RUN mkdir -p /app/data

@@ -1,0 +1,33 @@
+# Docker构建配置文件
+# 用于解决证书验证问题和加速构建
+
+# 启用实验性功能
+DOCKER_CLI_EXPERIMENTAL=enabled
+
+# 启用BuildKit
+DOCKER_BUILDKIT=1
+COMPOSE_DOCKER_CLI_BUILD=1
+
+# 禁用TLS验证（仅用于测试环境，生产环境不推荐）
+# DOCKER_TLS_VERIFY=0
+
+# 国内镜像源配置
+DOCKER_REGISTRY_MIRROR=https://registry.docker-cn.com
+DOCKER_REGISTRY_MIRROR_BACKUP=https://docker.mirrors.ustc.edu.cn
+
+# 构建缓存配置
+BUILDKIT_PROGRESS=plain
+DOCKER_BUILDKIT_INLINE_CACHE=1
+
+# 超时设置（单位：秒）
+COMPOSE_HTTP_TIMEOUT=300
+DOCKER_CLIENT_TIMEOUT=300
+DOCKER_TIMEOUT=300
+
+# 代理设置（如需使用，请取消注释并填写您的代理地址）
+# HTTP_PROXY=http://your-proxy-address:port
+# HTTPS_PROXY=http://your-proxy-address:port
+# NO_PROXY=localhost,127.0.0.1
+
+# 其他构建参数
+DOCKER_CONTENT_TRUST=0 
